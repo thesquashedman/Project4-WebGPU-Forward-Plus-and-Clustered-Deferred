@@ -288,9 +288,9 @@ export class Lights {
         const computePass = encoder.beginComputePass();
         computePass.setPipeline(this.clusterBoundsComputePipeline);
         computePass.setBindGroup(0, this.clusterBindGroup);
-        const workgroupCountX = shaders.constants.clusterX;
-        const workgroupCountY = shaders.constants.clusterY;
-        const workgroupCountZ = shaders.constants.clusterZ;
+        const workgroupCountX = Math.ceil(shaders.constants.clusterX / shaders.constants.clusteringBoundsWorkgroupSizeX);
+        const workgroupCountY = Math.ceil(shaders.constants.clusterY / shaders.constants.clusteringBoundsWorkgroupSizeY);
+        const workgroupCountZ = Math.ceil(shaders.constants.clusterZ / shaders.constants.clusteringBoundsWorkgroupSizeZ);
         computePass.dispatchWorkgroups(workgroupCountX, workgroupCountY, workgroupCountZ);
 
         computePass.end();

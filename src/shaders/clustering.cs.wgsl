@@ -4,6 +4,10 @@
 @group(${bindGroup_scene}) @binding(2) var<uniform> screenDim: vec2f;
 @group(${bindGroup_scene}) @binding(3) var<uniform> cameraMat: CameraUniforms;
 @group(${bindGroup_scene}) @binding(4) var<uniform> tileSizePixels: vec2u;
+@group(${bindGroup_scene}) @binding(5) var<uniform> LightsInClusterBuffer: array<LightsInCluster, ${clusterX} * ${clusterY} * ${clusterZ}>;
+@group(${bindGroup_scene}) @binding(6) var<storage, read_write> tempBuffer: array<temp, ${clusterX} * ${clusterY} * ${clusterZ}>;
+
+
 // ------------------------------------
 // Calculating cluster bounds:
 // ------------------------------------
@@ -30,12 +34,14 @@ fn lineIntersectionToZPlane(p0: vec3f, p1: vec3f, zDistance: f32) -> vec3f {
 
 
 @compute
-@workgroup_size(${clusteringWorkgroupSize})
+@workgroup_size(${clusteringBoundsWorkgroupSizeX}, ${clusteringBoundsWorkgroupSizeY}, ${clusteringBoundsWorkgroupSizeZ})
 fn clusterBounds(@builtin(global_invocation_id) globalIdx: vec3u) {
-    let tileIdx = globalIdx.x + globalIdx.y * ${clusterX} + globalIdx.z * ${clusterX} * ${clusterY};
-    if (tileIdx >= u32(${clusterX} * ${clusterY} * ${clusterZ})) {
+
+    if(globalIdx.x >= ${clusterX} || globalIdx.y >= ${clusterY} || globalIdx.z >= ${clusterZ}) {
         return;
     }
+    let tileIdx = globalIdx.x + globalIdx.y * ${clusterX} + globalIdx.z * ${clusterX} * ${clusterY};
+    
     
     let aabbMax = vec4f(vec2f(f32(globalIdx.x + 1), f32(globalIdx.y + 1)) * vec2f(tileSizePixels), -1, 1);
     let aabbMin = vec4f(vec2f(globalIdx.xy) * vec2f(tileSizePixels), -1, 1);

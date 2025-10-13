@@ -14,9 +14,12 @@ struct ClusterAABB {
     max: vec4f
 }
 
-struct Cluster {
-    numLights: u32,
+struct LightsInCluster {
     lightIndices: array<u32, ${maxLightsPerCluster}>
+}
+struct temp {
+    lightCount: u32,
+    offset: u32
 }
 
 // TODO-2: you may want to create a ClusterSet struct similar to LightSet
