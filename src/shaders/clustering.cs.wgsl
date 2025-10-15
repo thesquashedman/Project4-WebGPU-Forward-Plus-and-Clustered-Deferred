@@ -4,8 +4,8 @@
 @group(${bindGroup_scene}) @binding(2) var<uniform> screenDim: vec2f;
 @group(${bindGroup_scene}) @binding(3) var<uniform> cameraMat: CameraUniforms;
 @group(${bindGroup_scene}) @binding(4) var<uniform> tileSizePixels: vec2u;
-@group(${bindGroup_scene}) @binding(5) var<uniform> LightsInClusterBuffer: array<LightsInCluster, ${clusterX} * ${clusterY} * ${clusterZ}>;
-@group(${bindGroup_scene}) @binding(6) var<storage, read_write> tempBuffer: array<temp, ${clusterX} * ${clusterY} * ${clusterZ}>;
+@group(${bindGroup_scene}) @binding(5) var<storage, read_write> LightsInClusterBuffer: array<LightsInCluster, ${clusterX} * ${clusterY} * ${clusterZ}>;
+
 
 
 // ------------------------------------
@@ -22,7 +22,7 @@ fn clip2View(clip: vec4f) -> vec4f {
     return view / view.w;
 }
 fn screen2View(screen: vec4f) -> vec4f {
-    let clip = vec4f((screen.xy / screenDim) * 2.f - 1.f, screen.z, 1.f);
+    let clip = vec4f((screen.xy / screenDim) * 2.f - vec2f(1, 1), screen.z, 1.f);
     return clip2View(clip);
 }
 fn lineIntersectionToZPlane(p0: vec3f, p1: vec3f, zDistance: f32) -> vec3f {
@@ -31,6 +31,38 @@ fn lineIntersectionToZPlane(p0: vec3f, p1: vec3f, zDistance: f32) -> vec3f {
     return p0 + p1p0 * t;
 
 }
+fn sqDistPointAABB(point: vec3f, tile: u32) -> f32 {
+    var sqrDist = 0.0;
+    let aabb = clusterAABB[tile];
+
+
+    if (point.x < aabb.min.x) {
+        sqrDist += (aabb.min.x - point.x) * (aabb.min.x - point.x);
+    } else if (point.x > aabb.max.x) {
+        sqrDist += (point.x - aabb.max.x) * (point.x - aabb.max.x);
+    }
+    if (point.y < aabb.min.y) {
+        sqrDist += (aabb.min.y - point.y) * (aabb.min.y - point.y);
+    } else if (point.y > aabb.max.y) {
+        sqrDist += (point.y - aabb.max.y) * (point.y - aabb.max.y);
+    }
+    if (point.z < aabb.min.z) {
+        sqrDist += (aabb.min.z - point.z) * (aabb.min.z - point.z);
+    } else if (point.z > aabb.max.z) {
+        sqrDist += (point.z - aabb.max.z) * (point.z - aabb.max.z);
+    }
+    return sqrDist;
+
+}
+fn testSphereAABB(lightIdx: u32, tileIdx: u32) -> bool {
+    let radius = f32(${lightRadius});
+    var center = (cameraMat.viewMat * vec4f(lightSet.lights[lightIdx].pos, 1.0)).xyz;
+    
+    let sqrDist = sqDistPointAABB(center, tileIdx);
+    return sqrDist <= radius * radius;
+
+}
+
 
 
 @compute
@@ -43,26 +75,51 @@ fn clusterBounds(@builtin(global_invocation_id) globalIdx: vec3u) {
     let tileIdx = globalIdx.x + globalIdx.y * ${clusterX} + globalIdx.z * ${clusterX} * ${clusterY};
     
     
-    let aabbMax = vec4f(vec2f(f32(globalIdx.x + 1), f32(globalIdx.y + 1)) * vec2f(tileSizePixels), -1, 1);
-    let aabbMin = vec4f(vec2f(globalIdx.xy) * vec2f(tileSizePixels), -1, 1);
 
-    let aabbMinView = screen2View(aabbMin).xyz;
-    let aabbMaxView = screen2View(aabbMax).xyz;
-
-    let zNear = 0.1;
-    let zFar = 100.0;
-    let tileNear = -zNear * pow(zFar / zNear, f32(globalIdx.z) / f32(${clusterZ}));
-    let tileFar = -zNear * pow(zFar / zNear, f32(globalIdx.z + 1) / f32(${clusterZ}));
-
-    let nearPlaneMin = lineIntersectionToZPlane(vec3f(0.0), aabbMinView, tileNear);
-    let nearPlaneMax = lineIntersectionToZPlane(vec3f(0.0), aabbMaxView, tileNear);
-    let farPlaneMin = lineIntersectionToZPlane(vec3f(0.0), aabbMinView, tileFar);
-    let farPlaneMax = lineIntersectionToZPlane(vec3f(0.0), aabbMaxView, tileFar);
     
-    clusterAABB[tileIdx].min = vec4f(min(min(nearPlaneMin, nearPlaneMax), min(farPlaneMin, farPlaneMax)), 0);
-    clusterAABB[tileIdx].max = vec4f(max(max(nearPlaneMin, nearPlaneMax), max(farPlaneMin, farPlaneMax)), 0);
+    let screenMin = vec2f(globalIdx.xy) * vec2f(tileSizePixels);
+    let screenMax = vec2f(globalIdx.xy + vec2u(1, 1)) * vec2f(tileSizePixels);
+
+    // Project to view space with proper clip-Z
+    let viewMin = screen2View(vec4f(screenMin, -1.0, 1.0)).xyz;
+    let viewMax = screen2View(vec4f(screenMax, -1.0, 1.0)).xyz;
+
+    // Now scale to get real depth slices
+
+
+    let zNear = f32(${cameraNear});
+    let zFar = f32(${cameraFar});
+    let tileNear = zNear * pow(zFar / zNear, f32(globalIdx.z) / f32(${clusterZ}));
+    let tileFar = zNear * pow(zFar / zNear, f32(globalIdx.z + 1) / f32(${clusterZ}));
+
+
+    let nearMin = viewMin * (tileNear / -viewMin.z);
+    let nearMax = viewMax * (tileNear / -viewMax.z);
+    let farMin  = viewMin * (tileFar / -viewMin.z);
+    let farMax  = viewMax * (tileFar / -viewMax.z);
+    
+    clusterAABB[tileIdx].min = vec4f(min(min(nearMin, nearMax), min(farMin, farMax)), 0);
+    clusterAABB[tileIdx].max = vec4f(max(max(nearMin, nearMax), max(farMin, farMax)), 0);
+
+    
+    //For now, just go through each light source for each cluster.
+    LightsInClusterBuffer[tileIdx].lightCount = 0u;
+    for(var lightIdx: u32 = 0u; lightIdx < lightSet.numLights; lightIdx = lightIdx + 1u) {
+
+        
+        if(testSphereAABB(lightIdx, tileIdx)) {
+            let count = LightsInClusterBuffer[tileIdx].lightCount;
+            if(count < ${maxLightsPerCluster}u) {
+                LightsInClusterBuffer[tileIdx].lightIndices[count] = vec2u(lightIdx, 0u);
+                LightsInClusterBuffer[tileIdx].lightCount = count + 1u;
+            }
+        }
+    }
+    
     
 }
+
+
 
 
 // ------------------------------------
@@ -77,8 +134,3 @@ fn clusterBounds(@builtin(global_invocation_id) globalIdx: vec3u) {
 //         - Stop adding lights if the maximum number of lights is reached.
 
 //     - Store the number of lights assigned to this cluster.
-@compute
-@workgroup_size(${clusteringWorkgroupSize})
-fn clusterLights(@builtin(global_invocation_id) globalIdx: vec3u) {
-    
-}

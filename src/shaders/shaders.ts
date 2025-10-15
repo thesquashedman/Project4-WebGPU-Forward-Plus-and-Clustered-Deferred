@@ -40,6 +40,9 @@ export const constants = {
     clusterY : 50,
     clusterZ : 10,
     
+    cameraNear: Camera.nearPlane,
+    cameraFar: Camera.farPlane,
+
     maxLightsPerCluster: 500,
 };
 

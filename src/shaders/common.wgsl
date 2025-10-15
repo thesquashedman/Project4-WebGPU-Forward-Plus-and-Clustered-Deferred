@@ -15,17 +15,21 @@ struct ClusterAABB {
 }
 
 struct LightsInCluster {
-    lightIndices: array<u32, ${maxLightsPerCluster}>
+    lightIndices: array<vec2u, ${maxLightsPerCluster}>,
+    lightCount: u32
 }
-struct temp {
-    lightCount: u32,
-    offset: u32
+
+struct LightGrid{
+    offset: u32,
+    count: u32
 }
+
 
 // TODO-2: you may want to create a ClusterSet struct similar to LightSet
 
 struct CameraUniforms {
     // TODO-1.3: add an entry for the view proj mat (of type mat4x4f)
+    viewProjMat: mat4x4f,
     viewMat: mat4x4f,
     invProjMat: mat4x4f
 }

@@ -32,7 +32,7 @@ export class NaiveRenderer extends renderer.Renderer {
         });
 
         this.sceneUniformsBindGroup = renderer.device.createBindGroup({
-            label: "niave scene uniforms bind group",
+            label: "naive scene uniforms bind group",
             layout: this.sceneUniformsBindGroupLayout,
             entries: [
                 // TODO-1.2: add an entry for camera uniforms at binding 0

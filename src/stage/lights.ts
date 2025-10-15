@@ -81,6 +81,8 @@ export class Lights {
 
     pixelSizeBuffer: GPUBuffer;
 
+    lightsInClusterBuffer: GPUBuffer;
+
     clusterBoundsComputePipeline: GPUComputePipeline;
 
     clusterLightsComputePipeline: GPUComputePipeline;
@@ -174,6 +176,12 @@ export class Lights {
             usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
         });
 
+        this.lightsInClusterBuffer = device.createBuffer({
+            label: "Lights In Cluster Buffer",
+            size: (8 + 8 * shaders.constants.maxLightsPerCluster) * shaders.constants.clusterX * shaders.constants.clusterY * shaders.constants.clusterZ,
+            usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST
+        });
+
 
 
         let pixelSizeX = Math.ceil(renderer.canvas.width / shaders.constants.clusterX);
@@ -187,7 +195,7 @@ export class Lights {
                 { // lightSet
                     binding: 0,
                     visibility: GPUShaderStage.COMPUTE,
-                    buffer: {type: "read-only-storage"} //Should be uniform type?
+                    buffer: {type: "storage"}
                 },
                 { // clusterAABB
                     binding: 1,
@@ -208,7 +216,13 @@ export class Lights {
                     binding: 4,
                     visibility: GPUShaderStage.COMPUTE,
                     buffer: {type: "uniform"}
+                },
+                { // LightsInClusterBuffer
+                    binding: 5,
+                    visibility: GPUShaderStage.COMPUTE,
+                    buffer: {type: "storage"}
                 }
+                
 
             ]
         });
@@ -235,6 +249,10 @@ export class Lights {
                 { // tileSizePixels
                     binding: 4,
                     resource: {buffer: this.pixelSizeBuffer}
+                },
+                { // LightsInClusterBuffer
+                    binding: 5,
+                    resource: {buffer: this.lightsInClusterBuffer}
                 }
 
             ]
@@ -278,13 +296,14 @@ export class Lights {
         // implementing clustering here allows for reusing the code in both Forward+ and Clustered Deferred
 
         //Rewrite screen dimensions and pixel sizes in case of resize
+        
         let screenDim = new Float32Array([renderer.canvas.width, renderer.canvas.height]);
         device.queue.writeBuffer(this.screenDimBuffer, 0, screenDim);
         let pixelSizeX = Math.ceil(renderer.canvas.width / shaders.constants.clusterX);
         let pixelSizeY = Math.ceil(renderer.canvas.height / shaders.constants.clusterY);
         let pixelSize = new Float32Array([pixelSizeX, pixelSizeY]);
         device.queue.writeBuffer(this.pixelSizeBuffer, 0, pixelSize);
-
+        
         const computePass = encoder.beginComputePass();
         computePass.setPipeline(this.clusterBoundsComputePipeline);
         computePass.setBindGroup(0, this.clusterBindGroup);
@@ -295,7 +314,7 @@ export class Lights {
 
         computePass.end();
 
-        device.queue.submit([encoder.finish()]);
+        //device.queue.submit([encoder.finish()]);
 
 
 
@@ -305,6 +324,9 @@ export class Lights {
 
     // CHECKITOUT: this is where the light movement compute shader is dispatched from the host
     onFrame(time: number) {
+
+
+
         device.queue.writeBuffer(this.timeUniformBuffer, 0, new Float32Array([time]));
 
         // not using same encoder as render pass so this doesn't interfere with measuring actual rendering performance
@@ -322,9 +344,9 @@ export class Lights {
 
         device.queue.submit([encoder.finish()]);
 
-        const clusterEncoder = device.createCommandEncoder();
+        //const clusterEncoder = device.createCommandEncoder();
 
-        this.doLightClustering(clusterEncoder);
+        //this.doLightClustering(clusterEncoder);
 
 
     }
