@@ -3,7 +3,7 @@ import { toRadians } from "../math_util";
 import { device, canvas, fovYDegrees, aspectRatio } from "../renderer";
 
 class CameraUniforms {
-    readonly buffer = new ArrayBuffer(48 * 4);
+    readonly buffer = new ArrayBuffer(64 * 4);
     private readonly floatView = new Float32Array(this.buffer);
 
     set viewProjMat(mat: Float32Array) {
@@ -17,9 +17,14 @@ class CameraUniforms {
             this.floatView[16 + i] = mat[i];
         }
     }
-    set invViewMat(mat: Float32Array) {
+    set invProjMat(mat: Float32Array) {
         for (let i = 0; i < 16; i++) {
             this.floatView[32 + i] = mat[i];
+        }
+    }
+    set invView(mat: Float32Array) {
+        for (let i = 0; i < 16; i++) {
+            this.floatView[48 + i] = mat[i];
         }
     }
 
@@ -147,10 +152,12 @@ export class Camera {
         const viewMat = mat4.lookAt(this.cameraPos, lookPos, [0, 1, 0]);
         const viewProjMat = mat4.mul(this.projMat, viewMat);
         const invViewMat = mat4.invert(viewMat);
+        const invProjMat = mat4.invert(this.projMat);
         // TODO-1.1: set `this.uniforms.viewProjMat` to the newly calculated view proj mat
         this.uniforms.viewProjMat = viewProjMat;
         this.uniforms.viewMat = viewMat;
-        this.uniforms.invViewMat = invViewMat;
+        this.uniforms.invProjMat = invProjMat;
+        this.uniforms.invView = invViewMat;
         // TODO-2: write to extra buffers needed for light clustering here
 
         // TODO-1.1: upload `this.uniforms.buffer` (host side) to `this.uniformsBuffer` (device side)

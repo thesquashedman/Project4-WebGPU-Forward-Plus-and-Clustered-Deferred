@@ -19,6 +19,7 @@
 @group(${bindGroup_scene}) @binding(1) var<storage, read> lightSet: LightSet;
 @group(${bindGroup_scene}) @binding(2) var<storage, read> LightsInClusterBuffer: array<LightsInCluster, ${clusterX} * ${clusterY} * ${clusterZ}>;
 @group(${bindGroup_scene}) @binding(3) var<uniform> tileSizePixels: vec2u;
+@group(${bindGroup_scene}) @binding(4) var<uniform> screenSize: vec2u;
 
 @group(${bindGroup_material}) @binding(0) var diffuseTex: texture_2d<f32>;
 @group(${bindGroup_material}) @binding(1) var diffuseTexSampler: sampler;
@@ -74,7 +75,7 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     }
     
     var finalColor = diffuseColor.rgb * totalLightContrib;
-    //var finalColor = vec3f(f32(X_pos), f32(Y_pos), f32(Z_pos)) / vec3f(f32(${clusterX}), f32(${clusterY}), f32(${clusterZ}));
+    //var finalColor = vec3f(f32(clusterXIdx), f32(clusterYIdx), f32(clusterZIdx)) / vec3f(f32(${clusterX}), f32(${clusterY}), f32(${clusterZ}));
     //finalColor *= f32(lightsInCluster.lightCount);
     return vec4(finalColor, 1);
     
