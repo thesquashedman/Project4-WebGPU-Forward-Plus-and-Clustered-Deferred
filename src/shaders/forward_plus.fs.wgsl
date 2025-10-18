@@ -70,7 +70,7 @@ fn main(in: FragmentInput) -> @location(0) vec4f
     
     let lightsInCluster = LightsInClusterBuffer[clusterIdx];
     for (var lightIdx = 0u; lightIdx < lightsInCluster.lightCount; lightIdx++) {
-        let light = lightSet.lights[lightsInCluster.lightIndices[lightIdx].x];
+        let light = lightSet.lights[lightsInCluster.lightIndices[lightIdx]];
         totalLightContrib += calculateLightContrib(light, in.pos, in.nor);
     }
     

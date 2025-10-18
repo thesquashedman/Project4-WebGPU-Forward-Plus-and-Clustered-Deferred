@@ -37,16 +37,16 @@ export const constants = {
 
 
     lightRadius: 2,
-    clusterX : 50,
-    clusterY : 50,
-    clusterZ : 10,
+    clusterX : 16,
+    clusterY : 10,
+    clusterZ : 200,
     
     //cameraNear: Camera.nearPlane,
     //cameraFar: Camera.farPlane,
     cameraNear: 0.1,
-    cameraFar: 1000,
+    cameraFar: 1500,
 
-    maxLightsPerCluster: 600,
+    maxLightsPerCluster: 400,
 };
 
 // =================================

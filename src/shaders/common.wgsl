@@ -15,7 +15,7 @@ struct ClusterAABB {
 }
 
 struct LightsInCluster {
-    lightIndices: array<vec2u, ${maxLightsPerCluster}>,
+    lightIndices: array<u32, ${maxLightsPerCluster}>,
     lightCount: u32
 }
 
