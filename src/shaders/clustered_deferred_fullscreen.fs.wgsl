@@ -67,12 +67,13 @@ fn main(in: FragmentInput) -> @location(0) vec4f {
         totalLightContrib += calculateLightContrib(light, world.xyz, normal);
     }
     
-    
-    //var finalColor = diffuseColor;
-    //var finalColor = normal;
-    //var finalColor = vec3f(depth, depth, depth);
-    //var finalColor = vec3f(f32(clusterXIdx), f32(clusterYIdx), f32(clusterZIdx)) / vec3f(f32(${clusterX}), f32(${clusterY}), f32(${clusterZ}));
-    let finalColor = diffuseColor * totalLightContrib;
+    var finalColor = vec3f(0.0, 0.0, 0.0);
+    //finalColor = diffuseColor;
+    //finalColor = normal;
+    //finalColor = vec3f(posView.z, posView.z, posView.z);
+    //finalColor = world.xyz;
+    //finalColor = vec3f(f32(clusterXIdx), f32(clusterYIdx), f32(clusterZIdx)) / vec3f(f32(${clusterX}), f32(${clusterY}), f32(${clusterZ}));
+    finalColor = diffuseColor * totalLightContrib;
 
     return vec4f(finalColor, 1.0);
     

@@ -113,7 +113,22 @@ fn clusterBounds(@builtin(global_invocation_id) globalIdx: vec3u) {
 
     //For now, just go through each light source for each cluster.
     LightsInClusterBuffer[tileIdx].lightCount = 0u;
-    for(var lightIdx: u32 = 0u; lightIdx < lightSet.numLights; lightIdx = lightIdx + 2u) {
+    var count = 0u;
+    var lightIdx = 0u;
+    let numLights = lightSet.numLights;
+    while(count < ${maxLightsPerCluster}u && lightIdx < numLights)
+    {
+        if(testSphereAABB(lightIdx, tileIdx)) {
+
+            LightsInClusterBuffer[tileIdx].lightIndices[count] = lightIdx;
+            count++;
+        }
+        lightIdx++;
+        
+    }
+    LightsInClusterBuffer[tileIdx].lightCount = count;
+    /*
+    for(var lightIdx: u32 = 0u; (lightIdx < lightSet.numLights); lightIdx = lightIdx + 1u) {
         
         
         if(testSphereAABB(lightIdx, tileIdx)) {
@@ -124,7 +139,7 @@ fn clusterBounds(@builtin(global_invocation_id) globalIdx: vec3u) {
             }
         }
     }
-    
+    */
     
 }
 

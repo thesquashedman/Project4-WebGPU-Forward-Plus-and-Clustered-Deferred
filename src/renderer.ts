@@ -133,6 +133,11 @@ export abstract class Renderer {
         }
 
         let deltaTime = time - this.prevTime;
+
+ 
+
+        
+
         this.camera.onFrame(deltaTime);
         this.lights.onFrame(time);
 

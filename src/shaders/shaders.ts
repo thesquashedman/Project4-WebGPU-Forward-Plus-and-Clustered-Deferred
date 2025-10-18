@@ -50,15 +50,20 @@ export const constants = {
 };
 
 // =================================
-
+//Function provided by Qirui Fu, fixes some github pages shenanigans.
 function evalShaderRaw(raw: string) {
-    return eval('`' + raw.replaceAll('${', '${constants.') + '`');
+    const replaced = raw.replaceAll('${', '${constants.');
+    return new Function('constants', `return \`${replaced}\`;`)(constants);
 }
 
 const commonSrc: string = evalShaderRaw(commonRaw);
 
 function processShaderRaw(raw: string) {
-    return commonSrc + evalShaderRaw(raw);
+    let src = commonSrc + raw;
+    Object.entries(constants).forEach(([k, v]) => {
+        src = src.replaceAll(`\${${k}}`, String(v));
+    });
+    return src;
 }
 
 export const naiveVertSrc: string = processShaderRaw(naiveVertRaw);
